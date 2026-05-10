@@ -2,6 +2,7 @@ var crypto = require('../utils/crypto');
 var express = require('express');
 var db = require('../utils/db');
 var http = require("../utils/http");
+var opConfig = require('../utils/op_config');
 var fibers = require('fibers');
 
 var app = express();
@@ -40,45 +41,41 @@ app.all('*', function(req, res, next) {
 app.get('/register',function(req,res){
 	var account = req.query.account;
 	var password = req.query.password;
+	if(account == null || password == null || account == "" || password == ""){
+		send(res,{errcode:1,errmsg:"invalid parameters"});
+		return;
+	}
 
-	var fnFailed = function(){
-		send(res,{errcode:1,errmsg:"account has been used."});
-	};
-
-	var fnSucceed = function(){
-		send(res,{errcode:0,errmsg:"ok"});	
-	};
-
-	db.is_user_exist(account,function(exist){
+	db.is_account_exist(account,function(exist){
 		if(exist){
-			db.create_account(account,password,function(ret){
-				if (ret) {
-					fnSucceed();
-				}
-				else{
-					fnFailed();
-				}
-			});
+			send(res,{errcode:2,errmsg:"account has been used."});
+			return;
 		}
-		else{
-			fnFailed();
-			console.log("account has been used.");			
-		}
+		db.create_account(account,password,function(ret){
+			if(ret){
+				send(res,{errcode:0,errmsg:"ok"});	
+			}
+			else{
+				send(res,{errcode:3,errmsg:"create account failed."});
+			}
+		});
 	});
 });
 
 app.get('/get_version',function(req,res){
+	var appConf = opConfig.get().app || {};
 	var ret = {
-		version:config.VERSION,
+		version:appConf.version || config.VERSION,
 	}
 	send(res,ret);
 });
 
 app.get('/get_serverinfo',function(req,res){
+	var appConf = opConfig.get().app || {};
 	var ret = {
-		version:config.VERSION,
+		version:appConf.version || config.VERSION,
 		hall:hallAddr,
-		appweb:config.APP_WEB,
+		appweb:appConf.downloadUrl || config.APP_WEB,
 	}
 	send(res,ret);
 });
@@ -106,12 +103,13 @@ app.get('/auth',function(req,res){
 			return;
 		}
 
-        var account = "vivi_" + req.query.account;
-        var sign = get_md5(account + req.ip + config.ACCOUNT_PRI_KEY);
+        account = "vivi_" + req.query.account;
+        var sign = crypto.md5(account + req.ip + config.ACCOUNT_PRI_KEY);
         var ret = {
             errcode:0,
             errmsg:"ok",
             account:account,
+            halladdr:hallAddr,
             sign:sign
         }
         send(res,ret);

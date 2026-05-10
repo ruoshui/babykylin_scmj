@@ -432,7 +432,7 @@ exports.cost_gems = function(userid,cost,callback){
             throw err;
         }
         else{
-            callback(rows.length > 0);
+            callback(rows.affectedRows > 0);
         }
     });
 };

@@ -35,6 +35,9 @@ function initMgr(){
     var GameNetMgr = require("GameNetMgr");
     cc.vv.gameNetMgr = new GameNetMgr();
     cc.vv.gameNetMgr.initHandlers();
+
+    var PokerMgr = require("PokerMgr");
+    cc.vv.pokermgr = new PokerMgr();
     
     var AnysdkMgr = require("AnysdkMgr");
     cc.vv.anysdkMgr = new AnysdkMgr();

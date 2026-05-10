@@ -18,6 +18,10 @@ cc.Class({
         gamestate:"",
         isOver:false,
         dissoveData:null,
+        currentLevelRank:2,
+        levelRankByTeam:null,
+        leftCounts:null,
+        lastPlay:null,
         // foo: {
         //    default: null,
         //    url: cc.Texture2D,  // optional, default is typeof default
@@ -52,6 +56,10 @@ cc.Class({
             this.seats[i].huanpais = null;
             this.huanpaimethod = -1;
         }
+        this.currentLevelRank = 2;
+        this.levelRankByTeam = null;
+        this.leftCounts = null;
+        this.lastPlay = null;
     },
     
     clear:function(){
@@ -129,6 +137,15 @@ cc.Class({
     
     getWanfa:function(){
         var conf = this.conf;
+        if(conf && conf.type == "guandan"){
+            var gd = [];
+            gd.push("掼蛋");
+            gd.push(conf.maxGames + "局");
+            gd.push("打" + (conf.startLevel == 14 ? "A" : conf.startLevel));
+            gd.push(conf.tribute ? "进贡" : "不进贡");
+            gd.push(conf.wildCard ? "逢人配" : "无逢人配");
+            return gd.join(" ");
+        }
         if(conf && conf.maxGames!=null && conf.maxFan!=null){
             var strArr = [];
             strArr.push(conf.maxGames + "局");
@@ -185,6 +202,13 @@ cc.Class({
         cc.vv.net.addHandler("login_finished",function(data){
             console.log("login_finished");
             cc.director.loadScene("mjgame",function(){
+                if(self.conf && self.conf.type == "guandan"){
+                    require("GuandanTable");
+                    var canvas = cc.find("Canvas");
+                    if(canvas && canvas.getComponent("GuandanTable") == null){
+                        canvas.addComponent("GuandanTable");
+                    }
+                }
                 cc.vv.net.ping();
                 cc.vv.wc.hide();
             });
@@ -503,6 +527,102 @@ cc.Class({
         });
         
         
+
+        cc.vv.net.addHandler("gd_game_start_push",function(data){
+            self.gamestate = "playing";
+            self.currentLevelRank = data.levelRank;
+            self.levelRankByTeam = data.levelRankByTeam;
+            self.turn = data.turnSeat;
+            self.leftCounts = data.leftCounts;
+            if(self.seats && data.seats){
+                for(var i = 0; i < data.seats.length; ++i){
+                    self.seats[i].leftCount = data.seats[i].leftCount;
+                    self.seats[i].teamIndex = data.seats[i].teamIndex;
+                }
+            }
+            var seat = self.getSelfData();
+            if(seat){
+                seat.holds = data.holds || [];
+            }
+            self.dispatchEvent('gd_game_start',data);
+        });
+
+        cc.vv.net.addHandler("gd_sync_push",function(data){
+            self.gamestate = data.state;
+            self.currentLevelRank = data.currentLevelRank;
+            self.levelRankByTeam = data.levelRankByTeam;
+            self.turn = data.turnSeat;
+            self.lastPlay = data.lastPlay;
+            self.leftCounts = data.leftCounts;
+            if(self.seats && data.seats){
+                for(var i = 0; i < data.seats.length; ++i){
+                    self.seats[i].leftCount = data.seats[i].leftCount;
+                    self.seats[i].teamIndex = data.seats[i].teamIndex;
+                    self.seats[i].rankThisRound = data.seats[i].rankThisRound;
+                }
+            }
+            var seat = self.getSelfData();
+            if(seat){
+                seat.holds = data.holds || [];
+            }
+            self.dispatchEvent('gd_sync',data);
+        });
+
+        cc.vv.net.addHandler("gd_turn_push",function(data){
+            self.turn = data.seatIndex;
+            self.lastPlay = data.lastPlay;
+            self.dispatchEvent('gd_turn',data);
+        });
+
+        cc.vv.net.addHandler("gd_turn_notify_push",function(data){
+            self.turn = data.seatIndex;
+            self.lastPlay = data.lastPlay;
+            self.dispatchEvent('gd_turn',data);
+        });
+
+        cc.vv.net.addHandler("gd_play_cards_notify_push",function(data){
+            self.leftCounts = data.leftCounts;
+            self.lastPlay = data;
+            if(self.seats && self.seats[data.seatIndex]){
+                self.seats[data.seatIndex].leftCount = data.leftCount;
+                if(data.seatIndex == self.seatIndex && self.seats[data.seatIndex].holds){
+                    for(var i = 0; i < data.cards.length; ++i){
+                        var idx = self.seats[data.seatIndex].holds.indexOf(data.cards[i]);
+                        if(idx != -1){
+                            self.seats[data.seatIndex].holds.splice(idx,1);
+                        }
+                    }
+                }
+            }
+            self.dispatchEvent('gd_play_cards',data);
+        });
+
+        cc.vv.net.addHandler("gd_pass_notify_push",function(data){
+            self.dispatchEvent('gd_pass',data);
+        });
+
+        cc.vv.net.addHandler("gd_trick_over_push",function(data){
+            self.lastPlay = null;
+            self.turn = data.nextSeat;
+            self.dispatchEvent('gd_trick_over',data);
+        });
+
+        cc.vv.net.addHandler("gd_player_finish_push",function(data){
+            if(self.seats && self.seats[data.seatIndex]){
+                self.seats[data.seatIndex].rankThisRound = data.order;
+            }
+            self.dispatchEvent('gd_player_finish',data);
+        });
+
+        cc.vv.net.addHandler("gd_round_result_push",function(data){
+            self.dispatchEvent('gd_round_result',data);
+        });
+
+        cc.vv.net.addHandler("gd_game_over_push",function(data){
+            self.isOver = true;
+            self.dispatchEvent('gd_game_over',data);
+        });
+
         cc.vv.net.addHandler("chat_push",function(data){
             self.dispatchEvent("chat_push",data);    
         });
@@ -640,6 +760,14 @@ cc.Class({
         }
         this.turn = si;
         this.dispatchEvent('game_chupai',data);
+    },
+    
+    playGuandanCards:function(cards){
+        cc.vv.net.send("gd_play_cards",{cards:cards});
+    },
+
+    passGuandan:function(){
+        cc.vv.net.send("gd_pass",{});
     },
     
     connectGameServer:function(data){

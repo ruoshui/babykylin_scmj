@@ -36,7 +36,7 @@ cc.Class({
     },
 
     onBtnOK: function () {
-        var usedTypes = ['xzdd', 'xlch'];
+        var usedTypes = ['guandan'];
         var type = this.getType();
         if (usedTypes.indexOf(type) == -1) {
             return;
@@ -54,13 +54,7 @@ cc.Class({
                 break;
             }
         }
-        if (type == 0) {
-            return 'xzdd';
-        }
-        else if (type == 1) {
-            return 'xlch';
-        }
-        return 'xzdd';
+        return 'guandan';
     },
 
     getSelectedOfRadioGroup(groupRoot) {
@@ -103,13 +97,7 @@ cc.Class({
         };
 
         var type = this.getType();
-        var conf = null;
-        if (type == 'xzdd') {
-            conf = this.constructSCMJConf();
-        }
-        else if (type == 'xlch') {
-            conf = this.constructSCMJConf();
-        }
+        var conf = this.constructGuandanConf();
         conf.type = type;
 
         var data = {
@@ -120,6 +108,22 @@ cc.Class({
         console.log(data);
         cc.vv.wc.show("正在创建房间");
         cc.vv.http.sendRequest("/create_private_room", data, onCreate);
+    },
+
+
+    constructGuandanConf: function () {
+        var jushuxuanze = 0;
+        if(this._currentGame && this._currentGame.getChildByName('xuanzejushu')){
+            jushuxuanze = this.getSelectedOfRadioGroup('xuanzejushu');
+        }
+        return {
+            jushuxuanze:jushuxuanze,
+            baseScore:1,
+            startLevel:2,
+            tribute:true,
+            wildCard:false,
+            bombScore:false
+        };
     },
 
     constructSCMJConf: function () {
@@ -161,7 +165,7 @@ cc.Class({
                 this._gamelist.children[i].active = false;
             }
 
-            var game = this._gamelist.getChildByName(type);
+            var game = this._gamelist.getChildByName(type) || this._gamelist.children[0];
             if (game) {
                 game.active = true;
             }

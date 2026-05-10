@@ -14,13 +14,11 @@ function check_account(req,res){
 		http.send(res,1,"unknown error");
 		return false;
 	}
-	/*
 	var serverSign = crypto.md5(account + req.ip + config.ACCOUNT_PRI_KEY);
 	if(serverSign != sign){
 		http.send(res,2,"login failed.");
 		return false;
 	}
-	*/
 	return true;
 }
 
