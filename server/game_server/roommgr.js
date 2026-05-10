@@ -1,4 +1,5 @@
 ﻿var db = require('../utils/db');
+var opConfig = require('../utils/op_config');
 
 var rooms = {};
 var creatingRooms = {};
@@ -7,7 +8,6 @@ var userLocation = {};
 var totalRooms = 0;
 
 var GUANDAN_JU_SHU = [4,8,16];
-var GUANDAN_JU_SHU_COST = [2,3,5];
 
 function getGameMgr(){
 	return require("./gamemgr_guandan");
@@ -103,16 +103,18 @@ function buildGuandanConf(creator, roomConf){
 	if(isNaN(baseScore) || baseScore <= 0){
 		baseScore = 1;
 	}
+	var maxGames = GUANDAN_JU_SHU[jushuIndex];
+	var defaultRules = opConfig.getGuandanRules();
 	return {
 		type:"guandan",
 		baseScore:baseScore,
-		maxGames:GUANDAN_JU_SHU[jushuIndex],
+		maxGames:maxGames,
 		startLevel:startLevel,
-		tribute:parseBoolean(roomConf.tribute, true),
-		wildCard:parseBoolean(roomConf.wildCard, false),
-		bombScore:parseBoolean(roomConf.bombScore, false),
+		tribute:parseBoolean(roomConf.tribute, defaultRules.tribute),
+		wildCard:parseBoolean(roomConf.wildCard, defaultRules.wildCard),
+		bombScore:parseBoolean(roomConf.bombScore, defaultRules.bombScore),
 		creator:creator,
-		cost:GUANDAN_JU_SHU_COST[jushuIndex]
+		cost:opConfig.getGuandanCost(maxGames)
 	};
 }
 

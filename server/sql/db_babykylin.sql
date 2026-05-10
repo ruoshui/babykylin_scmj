@@ -94,8 +94,8 @@ CREATE TABLE `t_message` (
 -- ----------------------------
 -- Records of t_message
 -- ----------------------------
-INSERT INTO `t_message` VALUES ('notice', '幼麟游戏，卓越品质，值得信赖', '20161128');
-INSERT INTO `t_message` VALUES ('fkgm', '幼麟游戏，卓越品质，值得信赖', '20161128');
+INSERT INTO `t_message` VALUES ('notice', '欢迎来到掼蛋房间', '20260510');
+INSERT INTO `t_message` VALUES ('fkgm', '请在管理后台配置房卡购买说明', '20260510');
 
 -- ----------------------------
 -- Table structure for `t_rooms`

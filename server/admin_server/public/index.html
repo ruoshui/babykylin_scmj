@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>掼蛋管理后台</title>
+<style>
+body{font-family:Arial,"Microsoft YaHei",sans-serif;margin:0;background:#f5f7fb;color:#20242a}.wrap{max-width:1180px;margin:0 auto;padding:24px}h1{margin:0 0 12px}.card{background:#fff;border-radius:10px;padding:16px;margin:14px 0;box-shadow:0 2px 8px rgba(0,0,0,.06)}input,button,select{padding:8px;margin:4px;border:1px solid #ccd3df;border-radius:6px}button{background:#1574f5;color:white;border:0;cursor:pointer}table{width:100%;border-collapse:collapse;margin-top:10px}th,td{border-bottom:1px solid #edf0f5;text-align:left;padding:8px;font-size:13px}pre{white-space:pre-wrap;background:#101828;color:#d1fadf;padding:12px;border-radius:8px}.muted{color:#667085}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}</style>
+</head>
+<body>
+<div class="wrap">
+<h1>掼蛋管理后台</h1>
+<p class="muted">默认地址：<code>http://127.0.0.1:9100/</code>。请先输入管理密钥。</p>
+<div class="card row">管理密钥 <input id="key" type="password" value="change_me_admin_key" size="28"><button onclick="loadAll()">刷新</button><span id="status"></span></div>
+<div class="card"><h2>概览</h2><div id="summary">未加载</div></div>
+<div class="card"><h2>运营配置</h2><div class="row">4局房卡 <input id="cost4" size="4"> 8局房卡 <input id="cost8" size="4"> 16局房卡 <input id="cost16" size="4"> 进贡 <select id="tribute"><option value="true">开</option><option value="false">关</option></select> 逢人配 <select id="wildCard"><option value="false">关</option><option value="true">开</option></select> 炸弹分 <select id="bombScore"><option value="false">关</option><option value="true">开</option></select><button onclick="saveGuandan()">保存掼蛋配置</button></div><div class="row">公告版本 <input id="noticeVersion"> 公告 <input id="noticeMessage" size="50"><button onclick="saveNotice()">保存公告</button></div><div class="row">客户端版本 <input id="appVersion"> 下载地址 <input id="downloadUrl" size="50"><button onclick="saveApp()">保存版本</button></div></div>
+<div class="card"><h2>用户管理</h2><div class="row"><input id="keyword" placeholder="账号/用户ID"><button onclick="loadUsers()">查询用户</button> 用户ID <input id="gemUser" size="8"> 房卡增减 <input id="gemDelta" size="6" placeholder="如 10 或 -5"><button onclick="changeGems()">提交</button></div><div id="users"></div></div>
+<div class="card"><h2>房间</h2><button onclick="loadRooms()">刷新房间</button><div id="rooms"></div></div>
+<div class="card"><h2>战绩</h2><div class="row">用户ID <input id="historyUser" size="8"><button onclick="loadHistory()">查看战绩</button></div><pre id="history"></pre></div>
+</div>
+<script>
+function qs(){return '?key='+encodeURIComponent(document.getElementById('key').value)}
+function api(path, cb){fetch(path+qs()).then(r=>r.json()).then(cb).catch(e=>show('请求失败:'+e))}
+function apiParams(path, params, cb){fetch(path+qs()+'&'+params).then(r=>r.json()).then(cb).catch(e=>show('请求失败:'+e))}
+function show(s){document.getElementById('status').innerText=s}
+function boolText(v){return v?'true':'false'}
+function loadAll(){loadConfig();loadSummary();loadUsers();loadRooms()}
+function loadSummary(){api('/api/summary', r=>{document.getElementById('summary').innerHTML='用户数：'+r.data.users+'，房间数：'+r.data.rooms+'，房间中用户：'+r.data.inRoomUsers})}
+function loadConfig(){api('/api/config', r=>{var c=r.data;document.getElementById('cost4').value=c.guandan.costs['4'];document.getElementById('cost8').value=c.guandan.costs['8'];document.getElementById('cost16').value=c.guandan.costs['16'];document.getElementById('tribute').value=boolText(c.guandan.rules.tribute);document.getElementById('wildCard').value=boolText(c.guandan.rules.wildCard);document.getElementById('bombScore').value=boolText(c.guandan.rules.bombScore);document.getElementById('noticeVersion').value=c.notice.version;document.getElementById('noticeMessage').value=c.notice.message;document.getElementById('appVersion').value=c.app.version;document.getElementById('downloadUrl').value=c.app.downloadUrl;show(r.errmsg)})}
+function saveGuandan(){var p='cost4='+cost4.value+'&cost8='+cost8.value+'&cost16='+cost16.value+'&tribute='+tribute.value+'&wildCard='+wildCard.value+'&bombScore='+bombScore.value;apiParams('/api/config/guandan',p,r=>{show(r.errmsg);loadConfig()})}
+function saveNotice(){apiParams('/api/config/notice','version='+encodeURIComponent(noticeVersion.value)+'&message='+encodeURIComponent(noticeMessage.value),r=>{show(r.errmsg);loadConfig()})}
+function saveApp(){apiParams('/api/config/app','version='+encodeURIComponent(appVersion.value)+'&downloadUrl='+encodeURIComponent(downloadUrl.value),r=>{show(r.errmsg);loadConfig()})}
+function loadUsers(){apiParams('/api/users','keyword='+encodeURIComponent(keyword.value),r=>{var h='<table><tr><th>ID</th><th>账号</th><th>昵称</th><th>金币</th><th>房卡</th><th>房间</th></tr>';(r.data.users||[]).forEach(u=>h+='<tr><td>'+u.userid+'</td><td>'+u.account+'</td><td>'+u.name+'</td><td>'+u.coins+'</td><td>'+u.gems+'</td><td>'+(u.roomid||'')+'</td></tr>');users.innerHTML=h+'</table>';show(r.errmsg)})}
+function changeGems(){apiParams('/api/user/gems','userid='+gemUser.value+'&delta='+gemDelta.value,r=>{show(r.errmsg);loadUsers();loadSummary()})}
+function loadRooms(){api('/api/rooms',r=>{var h='<table><tr><th>房间</th><th>局数</th><th>配置</th><th>玩家</th><th>地址</th></tr>';(r.data.rooms||[]).forEach(x=>h+='<tr><td>'+x.id+'</td><td>'+x.num_of_turns+'</td><td>'+x.base_info+'</td><td>'+[x.user_name0,x.user_name1,x.user_name2,x.user_name3].join(' / ')+'</td><td>'+x.ip+':'+x.port+'</td></tr>');rooms.innerHTML=h+'</table>';show(r.errmsg)})}
+function loadHistory(){apiParams('/api/history','userid='+historyUser.value,r=>{history.textContent=JSON.stringify(r.data.history,null,2);show(r.errmsg)})}
+</script>
+</body>
+</html>

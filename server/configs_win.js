@@ -4,6 +4,7 @@ var HALL_ROOM_PORT = 9002;
 
 var ACCOUNT_PRI_KEY = "^&*#$%()@";
 var ROOM_PRI_KEY = "~!@#$(*&^%$&";
+var ADMIN_KEY = "change_me_admin_key";
 
 var LOCAL_IP = 'localhost';
 
@@ -30,6 +31,7 @@ exports.account_server = function(){
 		DEALDER_API_PORT:12581,
 		VERSION:'20161227',
 		APP_WEB:'http://fir.im/2f17',
+		ADMIN_KEY:ADMIN_KEY,
 	};
 };
 
@@ -42,6 +44,15 @@ exports.hall_server = function(){
 		ROOM_PORT:HALL_ROOM_PORT,
 		ACCOUNT_PRI_KEY:ACCOUNT_PRI_KEY,
 		ROOM_PRI_KEY:ROOM_PRI_KEY
+	};
+};
+
+//管理后台配置
+exports.admin_server = function(){
+	return {
+		ADMIN_IP:LOCAL_IP,
+		ADMIN_PORT:9100,
+		ADMIN_KEY:ADMIN_KEY
 	};
 };
 

@@ -1,0 +1,22 @@
+{
+  "guandan": {
+    "costs": {
+      "4": 2,
+      "8": 3,
+      "16": 5
+    },
+    "rules": {
+      "tribute": true,
+      "wildCard": false,
+      "bombScore": false
+    }
+  },
+  "notice": {
+    "version": "20260510",
+    "message": "欢迎来到掼蛋房间"
+  },
+  "app": {
+    "version": "20161227",
+    "downloadUrl": "http://fir.im/2f17"
+  }
+}
